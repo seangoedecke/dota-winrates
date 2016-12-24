@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS, cross_origin
 import requests
 
 app = Flask(__name__)
+CORS(app)
 
 API_KEY = "4E8E3E7A328FAA7814C46E719092F581"
 MATCH_HISTORY_ENDPOINT = "http://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/v001/"
@@ -95,6 +97,8 @@ REGIONS = { # again, nicked from dotaconstants
 def fetch_friend_ids(steamid):
     payload = { 'key': API_KEY, 'steamid': steamid, 'relationship': 'friend'}
     response = requests.get(FRIENDS_ENDPOINT, params=payload)
+    print response
+    print response.json()
     friends = response.json()['friendslist']['friends']
     ids = []
     for friend in friends:
@@ -144,6 +148,8 @@ def fetch_match_details(match_id, steamid):
     # did the player win?
     player_is_radiant = True
     for player in details['players']:
+        if 'account_id' not in player: # I think bots don't have account_id?
+            continue
         if str(steamid) == str(player['account_id']):
             if player['player_slot'] < 5:
                 player_is_radiant = True
