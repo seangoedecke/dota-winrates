@@ -32,6 +32,18 @@ def fetch_friends(ids):
 
 # Routes
 
+# @app.route("api/v1/fetch_matches", methods=['GET'])
+# def fetch_matches():
+#     args = request.args.to_dict()
+#     matches = fetch_matches(args['steamid'])
+#     return jsonify(matches)
+#
+# @app.route("api/v1/fetch_match_details", methods=['GET'])
+# def fetch_ranked_matches():
+#     args = request.args.to_dict()
+#     matches = fetch_ranked_matches(args['steamid'])
+#     return jsonify(matches)
+
 @app.route("/api/v1/friends", methods=['GET'])
 def friend_ids():
     args = request.args.to_dict()

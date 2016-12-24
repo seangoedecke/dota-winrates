@@ -7,6 +7,9 @@ API_KEY = "4E8E3E7A328FAA7814C46E719092F581"
 MATCH_HISTORY_ENDPOINT = "http://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/v001/"
 MATCH_DETAILS_ENDPOINT = "http://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/v1"
 
+FRIENDS_ENDPOINT = "http://api.steampowered.com/ISteamUser/GetFriendList/v0001/"
+NAMES_ENDPOINT = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/"
+
 CLUSTERS = {    # nicked from https://github.com/odota/dotaconstants
   "111": 1,
   "112": 1,
@@ -88,6 +91,27 @@ REGIONS = { # again, nicked from dotaconstants
 }
 
 # Helpers
+
+def fetch_friend_ids(steamid):
+    payload = { 'key': API_KEY, 'steamid': steamid, 'relationship': 'friend'}
+    response = requests.get(FRIENDS_ENDPOINT, params=payload)
+    friends = response.json()['friendslist']['friends']
+    ids = []
+    for friend in friends:
+        ids.append(friend['steamid'])
+    return ids
+
+def fetch_friends(ids):
+    ids_str = ''
+    for id in ids:
+        ids_str = ids_str + id + ','
+    payload = { 'key': API_KEY, 'steamids': ids_str}
+    response = requests.get(NAMES_ENDPOINT, params=payload)
+    profiles = response.json()['response']['players']
+    names = []
+    for profile in profiles:
+        names.append({'name': profile['personaname'], 'id': profile['steamid']})
+    return names
 
 def fetch_matches(steamid):
     # grab the final match_id and request again if you want more than 100
@@ -205,17 +229,12 @@ def calculate_winrate_by_server(match_details):
 
 # Routes
 
-# @app.route("api/v1/fetch_matches", methods=['GET'])
-# def fetch_matches():
-#     args = request.args.to_dict()
-#     matches = fetch_matches(args['steamid'])
-#     return jsonify(matches)
-#
-# @app.route("api/v1/fetch_match_details", methods=['GET'])
-# def fetch_ranked_matches():
-#     args = request.args.to_dict()
-#     matches = fetch_ranked_matches(args['steamid'])
-#     return jsonify(matches)
+@app.route("/api/v1/friends/names", methods=['GET'])
+def friends():
+    args = request.args.to_dict()
+    ids = fetch_friend_ids(args['steamid'])
+    friends = fetch_friends(ids)
+    return jsonify(friends)
 
 @app.route("/api/v1/server_winrates", methods=['GET'])
 def server_winrates():
