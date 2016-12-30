@@ -97,8 +97,6 @@ REGIONS = { # again, nicked from dotaconstants
 def fetch_friend_ids(steamid):
     payload = { 'key': API_KEY, 'steamid': steamid, 'relationship': 'friend'}
     response = requests.get(FRIENDS_ENDPOINT, params=payload)
-    print response
-    print response.json()
     friends = response.json()['friendslist']['friends']
     ids = []
     for friend in friends:
@@ -126,6 +124,12 @@ def fetch_matches(steamid):
         }
     response = requests.get(MATCH_HISTORY_ENDPOINT, params=payload)
 
+    # try:    # make sure response is parseable
+    #     response.json()
+    # except ValueError:
+    #     print response
+    #     return []
+
     if response.json()['result']['status'] != 1: # check if player match history is public
         return []
 
@@ -142,6 +146,12 @@ def fetch_match_details(match_id, steamid):
         'match_id': match_id,
         }
     response = requests.get(MATCH_DETAILS_ENDPOINT, params=payload)
+
+    # try:    # make sure response is parseable
+    #     response.json()
+    # except ValueError:
+    #     print response
+    #     return False
 
     details = response.json()['result']
 
@@ -249,8 +259,9 @@ def server_winrates():
 
     match_details = []
     for match_id in matches:
-        print "Fetching match: " + str(match_id)
-        match_details.append(fetch_match_details(match_id, args['steamid']))
+        match = fetch_match_details(match_id, args['steamid'])
+        if match:
+            match_details.append(match)
     winrates = calculate_winrate_by_server(match_details)
 
     return jsonify(winrates)
