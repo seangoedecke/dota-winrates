@@ -330,7 +330,7 @@ def server_winrates_v2():
     winrates = []
     for server in db_winrates:
         new_name = DB_TO_OD[server]
-        winrates.push = {
+        winrates.push({
         'server': new_name,
         'stats': {
             'ranked': {
@@ -342,7 +342,7 @@ def server_winrates_v2():
                 'games': 10
             }
             }
-        } # massage into expected format
+        }) # massage into expected format
 
     return jsonify(winrates)
 
