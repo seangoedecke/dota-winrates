@@ -2,6 +2,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 import requests
 from lxml import html
+import urllib3.contrib.pyopenssl
+urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 app = Flask(__name__)
 CORS(app)
