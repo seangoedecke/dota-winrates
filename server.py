@@ -330,7 +330,7 @@ def server_winrates_v2():
     winrates = []
     for server in db_winrates:
         new_name = DB_TO_OD[server]
-        winrates.push({
+        winrates.append({
         'server': new_name,
         'stats': {
             'ranked': {
