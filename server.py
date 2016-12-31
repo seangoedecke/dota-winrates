@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 import requests
+from lxml import html
 
 app = Flask(__name__)
 CORS(app)
@@ -11,6 +12,13 @@ MATCH_DETAILS_ENDPOINT = "http://api.steampowered.com/IDOTA2Match_570/GetMatchDe
 
 FRIENDS_ENDPOINT = "http://api.steampowered.com/ISteamUser/GetFriendList/v0001/"
 NAMES_ENDPOINT = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/"
+
+DB_HISTORY_ENDPOINT = "https://www.dotabuff.com/players/" # 123123123
+# /matches?lobby_type=ranked_matchmaking&region=india
+
+def get_history_endpoint(steamid, region):
+    return DB_HISTORY_ENDPOINT + str(steamid) + "/matches?lobby_type=ranked_matchmaking&region=" + region
+
 
 CLUSTERS = {    # nicked from https://github.com/odota/dotaconstants
   "111": 1,
@@ -90,6 +98,42 @@ REGIONS = { # again, nicked from dotaconstants
   "19": "JAPAN",
   "20": "PW TELECOM WUHAN",
   "25": "PW UNICOM TIANJIN"
+}
+
+DB_REGIONS = [
+    'us_west',
+    'us_east',
+    'europe_west',
+    'south_korea',
+    'se_asia',
+    'chile',
+    'australia',
+    'russia',
+    'europe_east',
+    'south_america',
+    'south_africa',
+    'china',
+    'peru',
+    'dubai',
+    'india'
+]
+
+DB_TO_OD = {
+    'us_west': "US WEST",
+    'us_east': "US EAST",
+    'europe_west': "EUROPE",
+    'south_korea': "PW UNICOM",
+    'se_asia': "SINGAPORE",
+    'chile' : "CHILE",
+    'australia': "AUSTRALIA",
+    'russia': "EUROPE",
+    'europe_east': "EUROPE",
+    'south_america': "BRAZIL",
+    'south_africa': "SOUTHAFRICA",
+    'china': "PW TELECOM GUANGDONG",
+    'peru': "PERU",
+    'dubai': "DUBAI",
+    'india': "INDIA"
 }
 
 # Helpers
@@ -263,6 +307,42 @@ def server_winrates():
         if match:
             match_details.append(match)
     winrates = calculate_winrate_by_server(match_details)
+
+    return jsonify(winrates)
+
+@app.route("/api/v2/server_winrates", methods=['GET'])
+def server_winrates_v2():
+    args = request.args.to_dict()
+
+    # fake a 'real' request so DB doesn't hit us with a 429
+    session = requests.Session()
+    session.headers.update({'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.131 Safari/537.36'})
+
+    db_winrates = {}
+    for region in DB_REGIONS:
+        response = session.get(get_history_endpoint(args['steamid'], region))
+        tree = html.fromstring(response.content)
+        wr_list = tree.xpath('//span[@class="color-stat-win"]/text()')
+        if len(wr_list) > 0:
+            winrate = wr_list[0]
+            db_winrates[region] = winrate
+
+    winrates = []
+    for server in db_winrates:
+        new_name = DB_TO_OD[server]
+        winrates.push = {
+        'server': new_name
+        'stats': {
+            'ranked': {
+                'winrate': db_winrates[server],
+                'games': 10
+                },
+            'unranked': {   # mocked out 'neutral' data
+                'winrate': 0.5,
+                'games': 10
+            }
+            }
+        } # massage into expected format
 
     return jsonify(winrates)
 
