@@ -323,6 +323,12 @@ def server_winrates_v2():
     db_winrates = {}
     for region in DB_REGIONS:
         response = session.get(get_history_endpoint(args['steamid'], region))
+
+        if response.status_code == 429:
+            # oh no, rate limited!
+            print "Rate limited. Reverting to slower Steam API method..."
+            return server_winrates() # guess we'll do it the hard way
+
         tree = html.fromstring(response.content)
         wr_list = tree.xpath('//span[@class="color-stat-win"]/text()')
         if len(wr_list) > 0:
@@ -332,11 +338,18 @@ def server_winrates_v2():
     winrates = []
     for server in db_winrates:
         new_name = DB_TO_OD[server]
+        if db_winrates[server][0] == "0":
+            winrate = 0
+        elif db_winrates[server][0:3] == "100":
+            winrate = 1
+        else:
+            winrate = float("0." + db_winrates[server][0:2] + db_winrates[server][3:5])
+
         winrates.append({
         'server': new_name,
         'stats': {
             'ranked': {
-                'winrate': db_winrates[server],
+                'winrate': winrate,
                 'games': 10
                 },
             'unranked': {   # mocked out 'neutral' data
